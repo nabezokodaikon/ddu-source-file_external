@@ -8,11 +8,8 @@ import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.7.1/file.ts";
 import { abortable } from "https://deno.land/std@0.224.0/async/mod.ts";
 import { TextLineStream } from "https://deno.land/std@0.224.0/streams/mod.ts";
 
-const enqueueSize1st = 1000;
-
 type Params = {
   cmd: string[];
-  updateItems: number;
 };
 
 async function* iterLine(r: ReadableStream<Uint8Array>): AsyncIterable<string> {
@@ -53,10 +50,7 @@ export class Source extends BaseSource<Params> {
           return;
         }
 
-        let items: Item<ActionData>[] = [];
-        const enqueueSize2nd = sourceParams.updateItems;
-        let enqueueSize = enqueueSize1st;
-        let numChunks = 0;
+        const items: Item<ActionData>[] = [];
 
         const proc = new Deno.Command(
           sourceParams.cmd[0],
@@ -88,14 +82,6 @@ export class Source extends BaseSource<Params> {
                 path: path,
               },
             });
-            if (items.length >= enqueueSize) {
-              numChunks++;
-              if (numChunks > 1) {
-                enqueueSize = enqueueSize2nd;
-              }
-              controller.enqueue(items);
-              items = [];
-            }
           }
           if (items.length) {
             controller.enqueue(items);
@@ -131,7 +117,6 @@ export class Source extends BaseSource<Params> {
   params(): Params {
     return {
       cmd: [],
-      updateItems: 100000,
     };
   }
 }
