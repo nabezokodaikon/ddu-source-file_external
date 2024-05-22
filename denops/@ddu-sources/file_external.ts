@@ -21,8 +21,9 @@ async function* iterLine(r: ReadableStream<Uint8Array>): AsyncIterable<string> {
     .pipeThrough(new TextLineStream());
 
   for await (const line of lines) {
-    if ((line as string).length) {
-      yield line as string;
+    const lineStr = line as string;
+    if (lineStr.length) {
+      yield lineStr;
     }
   }
 }
