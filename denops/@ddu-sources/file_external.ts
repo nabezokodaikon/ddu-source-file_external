@@ -5,7 +5,6 @@ import {
 } from "https://deno.land/x/ddu_vim@v4.1.0/types.ts";
 import { Denops, fn } from "https://deno.land/x/ddu_vim@v4.1.0/deps.ts";
 import { ActionData } from "https://deno.land/x/ddu_kind_file@v0.7.1/file.ts";
-import { relative, resolve } from "https://deno.land/std@0.224.0/path/mod.ts";
 import { abortable } from "https://deno.land/std@0.224.0/async/mod.ts";
 import { TextLineStream } from "https://deno.land/std@0.224.0/streams/mod.ts";
 
@@ -26,20 +25,6 @@ async function* iterLine(r: ReadableStream<Uint8Array>): AsyncIterable<string> {
       yield line as string;
     }
   }
-}
-
-async function tryGetStat(path: string): Promise<Deno.FileInfo | null> {
-  // Note: Deno.stat() may fail
-  try {
-    const stat = await Deno.stat(path);
-    if (stat.isDirectory || stat.isFile || stat.isSymlink) {
-      return stat;
-    }
-  } catch (_: unknown) {
-    // Ignore stat exception
-  }
-
-  return null;
 }
 
 export class Source extends BaseSource<Params> {
@@ -96,25 +81,11 @@ export class Source extends BaseSource<Params> {
             const path = line.trim();
             if (!path.length) continue;
 
-            const fullPath = resolve(root, path);
-            const stat = await tryGetStat(fullPath);
-            if (!stat) {
-              continue;
-            }
-
             items.push({
-              word: relative(root, fullPath) + (stat.isDirectory ? "/" : ""),
+              word: path,
               action: {
-                path: fullPath,
-                isDirectory: stat.isDirectory,
-                isLink: stat.isSymlink,
+                path: path,
               },
-              status: {
-                size: stat.size,
-                time: stat.mtime?.getTime(),
-              },
-              isTree: stat.isDirectory,
-              treePath: fullPath,
             });
             if (items.length >= enqueueSize) {
               numChunks++;
